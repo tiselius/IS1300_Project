@@ -8,6 +8,7 @@
 #include <variables.h>
 #include "gpio.h"
 #include "functions.h"
+#include "test.h"
 
 void tester(){
 	//		led_test();
