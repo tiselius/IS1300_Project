@@ -1,9 +1,13 @@
-/*
- * led_variables.h
- *
- *  Created on: Nov 16, 2023
- *      Author: arontiselius
- */
+/**
+******************************************************************************
+@brief
+@file
+@author
+@version 1.0
+@date 12-August-2019
+@brief Functions and structures for program Pingpong
+******************************************************************************
+*/
 #include "gpio.h"
 
 #ifndef INC_LED_VARIABLES_H_
@@ -34,7 +38,19 @@
 	extern uint32_t L4_Yellow;
 	extern uint32_t L4_Green;
 
-	/* FLAGS */
+	/* Combined lights*/
+	extern uint32_t NSTrafficGreen;
+	extern uint32_t NSTrafficYellow;
+	extern uint32_t NSTrafficRed;
+
+	extern uint32_t EWTrafficGreen;
+	extern uint32_t EWTrafficYellow;
+	extern uint32_t EWTrafficRed;
+
+	extern uint32_t NSCrossingActive;
+	extern uint32_t EWCrossingActive;
+
+	/* Switch and Car FLAGS */
 	extern volatile uint8_t TL1_Car_Flag;
 	extern volatile uint8_t TL2_Car_Flag;
 	extern volatile uint8_t TL3_Car_Flag;
@@ -43,14 +59,27 @@
 	extern volatile uint8_t PL1_Switch_Flag;
 	extern volatile uint8_t PL2_Switch_Flag;
 
+
+	/*Light Flags*/
+	extern uint8_t NSTrafficFlag;
+	extern uint8_t EWTrafficFlag;
+	extern uint8_t NSPedestrianFlag;
+	extern uint8_t EWPedestrianFlag;
+
+	extern uint8_t NSPedTransitioning;
+	extern uint8_t EWPedTransitioning;
+
 	/* LIGHT DELAYS, FREQUENCIES */
 	extern uint8_t toggleFreq;
-	extern uint8_t pedestrianDelay;
-	extern uint8_t walkingDelay;
-	extern uint8_t orangeDelay;
+	extern uint16_t pedestrianDelay;
+	extern uint16_t walkingDelay;
+	extern uint16_t orangeDelay;
+	extern uint16_t greenDelay;
+	extern uint16_t redDelayMax;
+
 
 	/* Other */
-	extern volatile uint32_t test;
+	extern uint32_t currentData;
 
 
 #endif /* INC_LED_VARIABLES_H_ */

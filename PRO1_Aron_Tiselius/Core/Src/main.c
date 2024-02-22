@@ -25,7 +25,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "functions.h"
-#include "traffic.h"
 #include "test.h"
 /* USER CODE END Includes */
 
@@ -94,8 +93,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	HAL_GPIO_WritePin(_595_Enable_GPIO_Port, _595_Enable_Pin, 0); //Enable, Active LOW
 	HAL_GPIO_WritePin(_595_Reset_GPIO_Port,_595_Reset_Pin, 1); //Master Reset, Active LOW
-
-
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -110,19 +107,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-
-		//		car_sw_test();
-		//		led_test();
-//		if(t == 0){
-//			shiftOut24(L1_Red + L2_Red + L3_Red + L4_Red);
-//			t = 1;
-//		}
-
-//		traffic_start();
+		/*Start test*/
 		tester();
-
-//		setLeds( L2_Red + L4_Red + L3_Green + L3_Yellow + L1_Red + L1_Yellow + L1_Green);
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

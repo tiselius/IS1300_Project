@@ -25,8 +25,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "functions.h"
 #include "variables.h"
+#include "functions.h"
 #include "semphr.h"
 /* USER CODE END Includes */
 
@@ -47,6 +47,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -55,17 +56,59 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for SecondTask */
-osThreadId_t SecondTaskHandle;
-const osThreadAttr_t SecondTask_attributes = {
-  .name = "SecondTask",
+/* Definitions for IdleTrafficTask */
+osThreadId_t IdleTrafficTaskHandle;
+const osThreadAttr_t IdleTrafficTask_attributes = {
+  .name = "IdleTrafficTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityHigh,
+  .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for mutex01 */
-osMutexId_t mutex01Handle;
-const osMutexAttr_t mutex01_attributes = {
-  .name = "mutex01"
+/* Definitions for PedCrossNSTask */
+osThreadId_t PedCrossNSTaskHandle;
+const osThreadAttr_t PedCrossNSTask_attributes = {
+  .name = "PedCrossNSTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityAboveNormal,
+};
+/* Definitions for TrafficContNSTa */
+osThreadId_t TrafficContNSTaHandle;
+const osThreadAttr_t TrafficContNSTa_attributes = {
+  .name = "TrafficContNSTa",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for TrafficContEWTa */
+osThreadId_t TrafficContEWTaHandle;
+const osThreadAttr_t TrafficContEWTa_attributes = {
+  .name = "TrafficContEWTa",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for PedCrossEWTask */
+osThreadId_t PedCrossEWTaskHandle;
+const osThreadAttr_t PedCrossEWTask_attributes = {
+  .name = "PedCrossEWTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityAboveNormal,
+};
+/* Definitions for NSBlueTask */
+osThreadId_t NSBlueTaskHandle;
+const osThreadAttr_t NSBlueTask_attributes = {
+  .name = "NSBlueTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for EWBlueTask */
+osThreadId_t EWBlueTaskHandle;
+const osThreadAttr_t EWBlueTask_attributes = {
+  .name = "EWBlueTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for FourWay */
+osMutexId_t FourWayHandle;
+const osMutexAttr_t FourWay_attributes = {
+  .name = "FourWay"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -74,7 +117,13 @@ const osMutexAttr_t mutex01_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
-void Second(void *argument);
+void IdleTraffic(void *argument);
+void PedCrossNS(void *argument);
+void TrafficContNS(void *argument);
+void TrafficContEW(void *argument);
+void PedCrossEW(void *argument);
+void NSBlue(void *argument);
+void EWBlue(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -88,8 +137,8 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE END Init */
   /* Create the mutex(es) */
-  /* creation of mutex01 */
-  mutex01Handle = osMutexNew(&mutex01_attributes);
+  /* creation of FourWay */
+  FourWayHandle = osMutexNew(&FourWay_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
 	/* add mutexes, ... */
@@ -111,8 +160,26 @@ void MX_FREERTOS_Init(void) {
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  /* creation of SecondTask */
-  SecondTaskHandle = osThreadNew(Second, NULL, &SecondTask_attributes);
+  /* creation of IdleTrafficTask */
+  IdleTrafficTaskHandle = osThreadNew(IdleTraffic, NULL, &IdleTrafficTask_attributes);
+
+  /* creation of PedCrossNSTask */
+  PedCrossNSTaskHandle = osThreadNew(PedCrossNS, NULL, &PedCrossNSTask_attributes);
+
+  /* creation of TrafficContNSTa */
+  TrafficContNSTaHandle = osThreadNew(TrafficContNS, NULL, &TrafficContNSTa_attributes);
+
+  /* creation of TrafficContEWTa */
+  TrafficContEWTaHandle = osThreadNew(TrafficContEW, NULL, &TrafficContEWTa_attributes);
+
+  /* creation of PedCrossEWTask */
+  PedCrossEWTaskHandle = osThreadNew(PedCrossEW, NULL, &PedCrossEWTask_attributes);
+
+  /* creation of NSBlueTask */
+  NSBlueTaskHandle = osThreadNew(NSBlue, NULL, &NSBlueTask_attributes);
+
+  /* creation of EWBlueTask */
+  EWBlueTaskHandle = osThreadNew(EWBlue, NULL, &EWBlueTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -134,62 +201,361 @@ void MX_FREERTOS_Init(void) {
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
-	TickType_t xLastWakeTime;
-	const TickType_t xPeriod = pdMS_TO_TICKS(2200) ; // ms to ticks
-	// Initialize the xLastWakeTime variable with the current time.
-	xLastWakeTime = xTaskGetTickCount();
+	/* Infinite loop */
 	for(;;)
 	{
-		// Obtain the semaphore - wait 10 ticks
-		if( xSemaphoreTake( mutex01Handle, ( TickType_t ) 10 )== pdTRUE )
-		{
-			// We now have the semaphore and can access the shared resource.
-
-			/*CRITICAL REGION BEGINS*/
-			setLeds(L1_Red);
-			setLeds(L1_Green);
-			HAL_Delay(1000);
-
-			/*CRITICAL REGION ENDS*/
-			if( xSemaphoreGive( mutex01Handle ) == pdTRUE )
-			{
-				setLeds(L3_Red);
-				setLeds(L3_Green);
-				HAL_Delay(1000); 		/*LAMPORNA BETYDER WOOHOO VI GAV TILLBAKA DEN :))))))*/
-				// We would not expect this call to fail because we must have
-				// obtained the semaphore to get here.
-				resetLeds(0xFFFFFF);
-			}
-			  vTaskDelayUntil( &xLastWakeTime, xPeriod );
-		}
+		osDelay(1);
 	}
-
   /* USER CODE END StartDefaultTask */
 }
 
-/* USER CODE BEGIN Header_Second */
+/* USER CODE BEGIN Header_IdleTraffic */
 /**
-* @brief Function implementing the SecondTask thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_Second */
-void Second(void *argument)
+ * @brief IdleTraffic implements the requirement R2.4.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_IdleTraffic */
+void IdleTraffic(void *argument)
 {
-  /* USER CODE BEGIN Second */
-
+  /* USER CODE BEGIN IdleTraffic */
 	TickType_t xLastWakeTime;
-	const TickType_t xPeriod = pdMS_TO_TICKS(500) ; // ms to ticks
+	const TickType_t xPeriod = pdMS_TO_TICKS(100) ; // ms to ticks
 	// Initialize the xLastWakeTime variable with the current time.
 	xLastWakeTime = xTaskGetTickCount();
-  for(;;)
-  {
-	  setLeds(L2_Red + L4_Red);
-	  HAL_Delay(300);
-	  resetLeds(L2_Red + L4_Red);
-	  vTaskDelayUntil( &xLastWakeTime, xPeriod );
-  }
-  /* USER CODE END Second */
+
+
+	/* Infinite loop */
+	for(;;)
+	{
+		if(!(TL1_Car_Flag || TL3_Car_Flag) && !(TL2_Car_Flag || TL4_Car_Flag)){ //No cars
+			if(EWTrafficFlag){ //Traffic is allowed EW
+				/*Change the trafic to NS, delay greenDelay*/
+				xSemaphoreTake( FourWayHandle, portMAX_DELAY);
+
+				pedestrianOffEW();
+				pedestrianOffNS();
+
+				trafficTransition();
+				trafficOnNS();
+				trafficOffEW();
+				pedestrianOnNS();
+
+				xSemaphoreGive(FourWayHandle);
+				vTaskDelay(pdMS_TO_TICKS(greenDelay));
+			}
+			else{//Traffic is allowed NS
+				/*Change the trafic to EW, delay greenDelay*/
+				xSemaphoreTake( FourWayHandle, portMAX_DELAY);
+				pedestrianOffEW();
+				pedestrianOffNS();
+
+				trafficTransition();
+				trafficOnEW();
+				trafficOffNS();
+				pedestrianOnEW();
+
+				xSemaphoreGive(FourWayHandle);
+				vTaskDelay(pdMS_TO_TICKS(greenDelay));
+			}
+		}
+
+		vTaskDelayUntil( &xLastWakeTime, xPeriod );
+	}
+  /* USER CODE END IdleTraffic */
+}
+
+/* USER CODE BEGIN Header_PedCrossNS */
+/**
+ * @brief PedCrossNS handles the NS pedestrian crossing events.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_PedCrossNS */
+void PedCrossNS(void *argument)
+{
+  /* USER CODE BEGIN PedCrossNS */
+	TickType_t xLastWakeTime;
+	const TickType_t xPeriod = pdMS_TO_TICKS(50) ; // ms to ticks
+	// Initialize the xLastWakeTime variable with the current time.
+	xLastWakeTime = xTaskGetTickCount();
+	/* Infinite loop */
+	for(;;)
+	{
+		if(PL1_Switch_Flag){ //Button has been pressed.
+			if(!NSPedestrianFlag){ //The light is not already green
+				while(NSPedTransitioning){ //Wait if the lights are transitioning. It causes trouble otherwise.
+					osDelay(1);
+				}
+				if(!NSPedestrianFlag){ //After the delay the light might have turned green. Check again.
+					while(!NSTrafficFlag){ //Waits for NS traffic to turn green.
+						osDelay(1);
+					}
+					xSemaphoreTake(FourWayHandle, portMAX_DELAY);
+					/*Makes the light green and resets the flag.*/
+					pedestrianOnNS();
+					pedestrianOffEW();
+					PL1_Switch_Flag = 0;
+
+					vTaskDelay(pdMS_TO_TICKS(walkingDelay));
+					xSemaphoreGive(FourWayHandle);
+				}
+			}
+			PL1_Switch_Flag = 0; //Resets the flag even if the light wasn't changed.
+		}
+		vTaskDelayUntil( &xLastWakeTime, xPeriod );
+	}
+  /* USER CODE END PedCrossNS */
+}
+
+/* USER CODE BEGIN Header_TrafficContNS */
+/**
+ * @brief TrafficContNS handles light behavior when there is a car NS.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_TrafficContNS */
+void TrafficContNS(void *argument)
+{
+  /* USER CODE BEGIN TrafficContNS */
+	trafficOnEW();
+	trafficOffNS();
+
+	TickType_t xLastWakeTime;
+	const TickType_t xPeriod = pdMS_TO_TICKS(50) ; // ms to ticks
+	// Initialize the xLastWakeTime variable with the current time.
+	xLastWakeTime = xTaskGetTickCount();  /* Infinite loop */
+
+	for(;;)
+	{
+		if(TL2_Car_Flag || TL4_Car_Flag){ //There is a car NS.
+			if(EWTrafficFlag){	//Current traffic light is EW.
+				if((TL1_Car_Flag || TL3_Car_Flag)) {	//If there's a car EW we have to wait.
+					vTaskDelay(pdMS_TO_TICKS(redDelayMax));
+					if(!PL2_Switch_Flag){ //No overlapping pedestrian crossing
+						xSemaphoreTake( FourWayHandle, portMAX_DELAY);
+						/*Transition NS to green, EW to red.*/
+						pedestrianOffEW();
+						pedestrianOffNS();
+
+						trafficTransition();
+						trafficOnNS();
+						trafficOffEW();
+						pedestrianOnNS();
+						xSemaphoreGive(FourWayHandle);
+					}
+				}
+				else{									//If there is no car EW, just go.
+					if(!PL2_Switch_Flag){ //No overlapping pedestrian crossing
+						xSemaphoreTake( FourWayHandle, portMAX_DELAY);
+						/*Transition NS to green, EW to red.*/
+
+						pedestrianOffEW();
+						pedestrianOffNS();
+
+						trafficTransition();
+						trafficOnNS();
+						trafficOffEW();
+						pedestrianOnNS();
+						xSemaphoreGive(FourWayHandle);
+					}
+				}
+			}
+			else if(!PL2_Switch_Flag){ //Light is already green and no active pedestrian crossing causing overlap
+				osDelay(1);
+			}
+			else{ //Light is already green, but there is an active pedestrian crossing.
+				xSemaphoreTake( FourWayHandle, portMAX_DELAY);
+				/*Transition EW to green, NS to red.*/
+				pedestrianOffEW();
+				pedestrianOffNS();
+
+				trafficTransition();
+				trafficOnEW();
+				trafficOffNS();
+				pedestrianOnEW();
+				xSemaphoreGive(FourWayHandle);
+			}
+		}
+
+		vTaskDelayUntil( &xLastWakeTime, xPeriod );
+	}
+
+  /* USER CODE END TrafficContNS */
+}
+
+/* USER CODE BEGIN Header_TrafficContEW */
+/**
+ * @brief TrafficContEW handles light behavior when there is a car EW.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_TrafficContEW */
+void TrafficContEW(void *argument)
+{
+  /* USER CODE BEGIN TrafficContEW */
+	TickType_t xLastWakeTime;
+	const TickType_t xPeriod = pdMS_TO_TICKS(90) ; // ms to ticks
+	// Initialize the xLastWakeTime variable with the current time.
+	xLastWakeTime = xTaskGetTickCount();
+	/* Infinite loop */
+	for(;;)
+	{
+
+		if(TL1_Car_Flag || TL3_Car_Flag){ //There is a car EW.
+			if(NSTrafficFlag){	//Current traffic light is NS.
+
+				if(TL2_Car_Flag || TL4_Car_Flag){	//If there's a car NS we have to wait.
+					vTaskDelay(pdMS_TO_TICKS(redDelayMax));
+					if(!PL1_Switch_Flag){ //No overlapping pedestrian crossing
+						xSemaphoreTake( FourWayHandle, portMAX_DELAY);
+						/*Transition EW to green, NS to red.*/
+						pedestrianOffEW();
+						pedestrianOffNS();
+
+						trafficTransition();
+						trafficOnEW();
+						trafficOffNS();
+
+						pedestrianOnEW();
+						xSemaphoreGive(FourWayHandle);
+					}
+				}
+				else{	//If there is no car NS, just go.
+					if(!PL1_Switch_Flag){ //No overlapping pedestrian crossing
+						xSemaphoreTake( FourWayHandle, portMAX_DELAY);
+						/*Transition EW to green, NS to red.*/
+						pedestrianOffEW();
+						pedestrianOffNS();
+
+						trafficTransition();
+						trafficOnEW();
+						trafficOffNS();
+
+						pedestrianOnEW();
+						xSemaphoreGive(FourWayHandle);
+					}
+				}
+			}
+			else if(!PL1_Switch_Flag){ //Light is already green and no active pedestrian crossing causing overlap
+				osDelay(1);
+			}
+
+			else{ //Light is already green, but there is an active pedestrian crossing.
+				xSemaphoreTake( FourWayHandle, portMAX_DELAY);
+				/*Transition NS to green, EW to red.*/
+				pedestrianOffEW();
+				pedestrianOffNS();
+
+				trafficTransition();
+				trafficOnNS();
+				trafficOffEW();
+				xSemaphoreGive(FourWayHandle);
+			}
+		}
+
+		vTaskDelayUntil( &xLastWakeTime, xPeriod );
+	}
+  /* USER CODE END TrafficContEW */
+}
+
+/* USER CODE BEGIN Header_PedCrossEW */
+/**
+ * @brief PedCrossNS handles the EW pedestrian crossing events.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_PedCrossEW */
+void PedCrossEW(void *argument)
+{
+  /* USER CODE BEGIN PedCrossEW */
+	TickType_t xLastWakeTime;
+	const TickType_t xPeriod = pdMS_TO_TICKS(50) ; // ms to ticks
+	// Initialize the xLastWakeTime variable with the current time.
+	xLastWakeTime = xTaskGetTickCount();
+	/* Infinite loop */
+	for(;;)
+	{
+		if(PL2_Switch_Flag){ //Button has been pressed.
+			if(!EWPedestrianFlag){ //The light is not already green
+				while(EWPedTransitioning){ //Wait if the lights are transitioning. It causes trouble otherwise.
+					osDelay(1);
+				}
+				if(!EWPedestrianFlag){ //After the delay the light might have turned green. Check again.
+					while(!EWTrafficFlag){//Waits for EW traffic to turn green.
+						osDelay(1);
+					}
+					xSemaphoreTake(FourWayHandle, portMAX_DELAY);
+					/*Makes the light green and resets the flag.*/
+					pedestrianOnEW();
+					pedestrianOffNS();
+					PL2_Switch_Flag = 0;
+
+					vTaskDelay(pdMS_TO_TICKS(walkingDelay));
+					xSemaphoreGive(FourWayHandle);
+				}
+			}
+			PL2_Switch_Flag = 0; //Resets the flag even if the light wasn't changed.
+		}
+		vTaskDelayUntil( &xLastWakeTime, xPeriod );
+	}
+  /* USER CODE END PedCrossEW */
+}
+
+/* USER CODE BEGIN Header_NSBlue */
+/**
+ * @brief NSBlue is responsible for flashing the NS blue light when needed.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_NSBlue */
+void NSBlue(void *argument)
+{
+  /* USER CODE BEGIN NSBlue */
+	TickType_t xLastWakeTime;
+	const TickType_t xPeriod = pdMS_TO_TICKS(1000/toggleFreq) ; // ms to ticks
+	// Initialize the xLastWakeTime variable with the current time.
+	xLastWakeTime = xTaskGetTickCount();
+	/* Infinite loop */
+	for(;;)
+	{
+		if(PL1_Switch_Flag && !NSPedestrianFlag){
+			setLeds(P1_Blue);
+			vTaskDelay(pdMS_TO_TICKS(1000/toggleFreq)/2);
+			resetLeds(P1_Blue);
+			vTaskDelay(pdMS_TO_TICKS(1000/toggleFreq)/2);
+		}
+		vTaskDelayUntil( &xLastWakeTime, xPeriod );
+	}
+  /* USER CODE END NSBlue */
+}
+
+/* USER CODE BEGIN Header_EWBlue */
+/**
+ * @brief EWBlue is responsible for flashing the EW blue light when needed.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_EWBlue */
+void EWBlue(void *argument)
+{
+  /* USER CODE BEGIN EWBlue */
+	TickType_t xLastWakeTime;
+	const TickType_t xPeriod = pdMS_TO_TICKS(1000/toggleFreq) ; // ms to ticks
+	// Initialize the xLastWakeTime variable with the current time.
+	xLastWakeTime = xTaskGetTickCount();
+	/* Infinite loop */
+	for(;;)
+	{
+		if(PL2_Switch_Flag && !EWPedestrianFlag){
+			setLeds(P2_Blue);
+			vTaskDelay(pdMS_TO_TICKS(1000/toggleFreq)/2);
+			resetLeds(P2_Blue);
+			vTaskDelay(pdMS_TO_TICKS(1000/toggleFreq)/2);
+		}
+		vTaskDelayUntil( &xLastWakeTime, xPeriod );
+	}
+  /* USER CODE END EWBlue */
 }
 
 /* Private application code --------------------------------------------------*/

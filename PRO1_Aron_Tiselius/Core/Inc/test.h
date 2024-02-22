@@ -13,5 +13,9 @@ void led_test();
 void car_sw_test();
 void blinking();
 void flag_tester();
+void timer_tester();
+void traffic_sequence();
+void pedestrian_test();
+
 
 #endif /* INC_TEST_H_ */

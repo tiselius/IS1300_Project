@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "functions.h"
 #include "variables.h"
+#include "stm32l4xx_hal.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -171,7 +172,13 @@ void EXTI4_IRQHandler(void)
   /* USER CODE END EXTI4_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(TL1_Car_Pin);
   /* USER CODE BEGIN EXTI4_IRQn 1 */
-	TL1_Car_Flag = 1;
+	if(HAL_GPIO_ReadPin(TL1_Car_GPIO_Port,TL1_Car_Pin) == 1){
+		TL1_Car_Flag = 1;
+	}
+	else{
+		TL1_Car_Flag = 0;
+	}
+
   /* USER CODE END EXTI4_IRQn 1 */
 }
 
@@ -241,9 +248,7 @@ void EXTI15_10_IRQHandler(void)
 	if(HAL_GPIO_ReadPin(PL1_Switch_GPIO_Port,PL1_Switch_Pin) == 0){
 		PL1_Switch_Flag = 1;
 	}
-	else{
-		PL1_Switch_Flag = 0;
-	}
+
 
   /* USER CODE END EXTI15_10_IRQn 1 */
 }

@@ -11,12 +11,16 @@
 #include "test.h"
 
 void tester(){
-	//		led_test();
-	//	car_sw_test();
-	//		blinking();
-	flag_tester();
+	//			led_test();
+	//		car_sw_test();
+	//			blinking();
+	//		flag_tester();
+	//	timer_tester();
+	//	traffic_sequence();
+	pedestrian_test();
 }
 
+/*Simple test for shiftOut24*/
 void led_test(){
 	shiftOut24(L1_Red);
 	HAL_Delay(1000);
@@ -59,16 +63,26 @@ void led_test(){
 	HAL_Delay(1000);
 	shiftOut24(L4_Green);
 	HAL_Delay(1000);
+	shiftOut24(0xFFFFFF);
 }
 
+/*Basic test for setting and resetting an LED*/
 void car_sw_test(){
-	while(HAL_GPIO_ReadPin(TL1_Car_GPIO_Port, TL1_Car_Pin) == 1){
-		shiftOut24(0);
+
+	//Initialize some LEDs which should not be changed by setting/resetting
+	shiftOut24(L1_Red + L2_Red + L4_Green + P2_Blue);
+	for(;;){
+		if(TL1_Car_Flag == 1){
+			resetLeds(P1_Red);
+		}
+		if(TL1_Car_Flag == 0){
+			setLeds(P1_Red);
+		}
+		HAL_Delay(100);
 	}
-	shiftOut24(P1_Red);
-	HAL_Delay(1000);
 }
 
+/*Tests all LEDs and the light-variables*/
 void blinking(){
 	while(1){
 		blink_led(L1_Red);
@@ -111,30 +125,30 @@ void blinking(){
 	}
 }
 
-
+/*Tests the flags for the switches and buttons.*/
 void flag_tester(){
 	if(TL1_Car_Flag == 1){
 		for(int i = 0; i<10; i++)
 			blink_led(L1_Green);
-		TL1_Car_Flag = 0;
+		//		TL1_Car_Flag = 0;
 	}
 
 	if(TL2_Car_Flag == 1){
 		for(int i = 0; i<10; i++)
 			blink_led(L2_Green);
-		TL2_Car_Flag = 0;
+		//		TL2_Car_Flag = 0;
 	}
 
 	if(TL3_Car_Flag == 1){
 		for(int i = 0; i<10; i++)
 			blink_led(L3_Green);
-		TL3_Car_Flag = 0;
+		//		TL3_Car_Flag = 0;
 	}
 
 	if(TL4_Car_Flag == 1){
 		for(int i = 0; i<10; i++)
 			blink_led(L4_Green);
-		TL4_Car_Flag = 0;
+		//		TL4_Car_Flag = 0;
 	}
 
 	if(PL1_Switch_Flag == 1)
@@ -146,5 +160,78 @@ void flag_tester(){
 		for(int i = 0; i<10; i++)
 			blink_led(P2_Blue);
 	PL2_Switch_Flag = 0;
+}
+
+/*Tests the different on/off functions as well as the transition function*/
+void traffic_sequence(){
+	/*Initialization*/
+	trafficOnNS();
+	trafficOffEW();
+	pedestrianOnNS();
+	pedestrianOffEW();
+
+	/*Forever switch between NS/EW including pedestrian lights.*/
+	for(;;){
+		pedestrianOffNS();
+		pedestrianOffEW();
+		trafficTransition();
+		trafficOffNS();
+		trafficOnEW();
+		pedestrianOnEW();
+
+		HAL_Delay(greenDelay);
+
+		pedestrianOffNS();
+		pedestrianOffEW();
+		trafficTransition();
+		trafficOffEW();
+		trafficOnNS();
+		pedestrianOnNS();
+
+		HAL_Delay(greenDelay);
+	}
+}
+/*Tests the blink_led-function as well the logic of the if-statements*/
+void pedestrian_test(){
+	for(;;){
+		if(PL2_Switch_Flag && !EWPedestrianFlag){
+			pedestrian_blink_led(P2_Blue,pedestrianDelay-orangeDelay);
+			pedestrianOffNS();
+			pedestrianOffEW();
+
+//			trafficTransition(); Should be here timing-wise, but in another task.
+
+			// use these instead (*)
+			resetLeds(EWTrafficRed + NSTrafficRed + EWTrafficGreen + NSTrafficGreen); //*
+			setLeds(NSTrafficYellow + EWTrafficYellow); //*
+
+			pedestrian_blink_led(P2_Blue,orangeDelay);
+			trafficOffNS();
+			trafficOnEW();
+			pedestrianOnEW();
+			PL2_Switch_Flag = 0;
+			HAL_Delay(walkingDelay);
+		}
+		if(PL1_Switch_Flag && !NSPedestrianFlag){
+			pedestrian_blink_led(P1_Blue,pedestrianDelay-orangeDelay);
+			pedestrianOffNS();
+			pedestrianOffEW();
+
+			//			trafficTransition(); Should be here timing-wise, but in another task.
+
+			// use these instead (*)
+			resetLeds(EWTrafficRed + NSTrafficRed + EWTrafficGreen + NSTrafficGreen); //*
+			setLeds(NSTrafficYellow + EWTrafficYellow); //*
+
+			pedestrian_blink_led(P1_Blue,orangeDelay);
+			trafficOnNS();
+			trafficOffEW();
+			pedestrianOnNS();
+
+			PL1_Switch_Flag = 0;
+			HAL_Delay(walkingDelay);
+		}
+
+	}
 }
 
